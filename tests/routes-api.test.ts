@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createRoutesHandler } from '@/app/api/ai/routes/route';
+import { createRoutesHandler, PUT } from '@/app/api/ai/routes/route';
 import { closeDb, generateId, getDb } from '@/lib/db';
 
 const route = (type: 'depth_first' | 'breadth_first', hours: number) => ({
@@ -41,5 +41,27 @@ describe('POST /api/ai/routes', () => {
     getDb().prepare('DELETE FROM plan_route WHERE goal_id = ?').run(goalId);
     getDb().prepare('DELETE FROM goal_understanding WHERE goal_id = ?').run(goalId);
     getDb().prepare('DELETE FROM goal WHERE id = ?').run(goalId);
+  });
+
+  it('只选中用户明确选择的路线', async () => {
+    const goalId = generateId();
+    const depthId = generateId();
+    const breadthId = generateId();
+    getDb().prepare('INSERT INTO goal (id, raw_input, status) VALUES (?, ?, ?)').run(goalId, '学投资', 'active');
+    const insert = getDb().prepare(`INSERT INTO plan_route (id, goal_id, route_type, title, thesis, phases_json, advantages_json, risks_json, first_month_preview_json, user_profile_basis_json) VALUES (?, ?, ?, ?, ?, '[]', '[]', '[]', '{}', '[]')`);
+    insert.run(depthId, goalId, 'depth_first', '深度路线', '先深后广');
+    insert.run(breadthId, goalId, 'breadth_first', '广度路线', '先广后深');
+
+    const response = await PUT(new Request('http://localhost/api/ai/routes', {
+      method: 'PUT', body: JSON.stringify({ goalId, routeId: breadthId }),
+    }));
+    expect(response.status).toBe(200);
+    const rows = getDb().prepare('SELECT id, status FROM plan_route WHERE goal_id = ? ORDER BY id').all(goalId) as { id: string; status: string }[];
+    expect(rows.find((row) => row.id === breadthId)?.status).toBe('selected');
+    expect(rows.find((row) => row.id === depthId)?.status).toBe('rejected');
+
+    getDb().prepare('DELETE FROM plan_route WHERE goal_id = ?').run(goalId);
+    getDb().prepare('DELETE FROM goal WHERE id = ?').run(goalId);
+    getDb().prepare("DELETE FROM personal_model WHERE id = 'singleton'").run();
   });
 });

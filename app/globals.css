@@ -369,3 +369,23 @@ textarea {
 .status-screen { width: min(100% - 48px, 900px); margin: 0 auto; padding: 18vh 0; }
 .status-screen a { color: var(--moss); font-weight: 800; }
 @media (max-width: 800px) { .understanding-grid, .field-pair { grid-template-columns: 1fr; } .workspace-shell { width: min(100% - 28px, 1180px); } }
+.route-intro { padding: 64px 0 36px; max-width: 820px; }
+.route-intro h1 { margin: 0; font: 500 clamp(46px, 6vw, 76px)/1 var(--serif); letter-spacing: -.05em; }
+.route-intro > p:last-child { color: var(--muted); line-height: 1.7; }
+.route-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.route-card { display: grid; gap: 24px; align-content: start; border: 1px solid var(--line); padding: 30px; background: rgba(255,255,255,.32); transition: transform .16s, box-shadow .16s; }
+.route-card.selected { border-color: var(--moss); box-shadow: 8px 8px 0 var(--acid); transform: translate(-4px,-4px); }
+.route-card-head > span { color: var(--moss); font-size: 11px; font-weight: 800; letter-spacing: .15em; }
+.route-card h2 { margin: 10px 0; font: 500 38px/1.1 var(--serif); }
+.route-card p { color: var(--muted); line-height: 1.6; }
+.route-card summary { cursor: pointer; font-weight: 800; }
+.phase-row { margin-top: 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+.phase-row span { float: right; color: var(--muted); font-size: 12px; }
+.route-section { border-top: 4px solid var(--ink); padding-top: 15px; }
+.route-section h3 { margin: 0 0 12px; font-family: var(--serif); }
+.route-section.risk { padding: 18px; border: 0; background: #fff1a8; }
+.route-section.risk span { color: #7a5c00; }
+.route-choice { width: 100%; border: 1px solid var(--ink); padding: 15px; background: transparent; cursor: pointer; font-weight: 800; }
+.route-card.selected .route-choice { background: var(--ink); color: var(--paper); }
+.route-next { margin-top: 28px; text-decoration: none; }
+@media (max-width: 800px) { .route-grid { grid-template-columns: 1fr; } }

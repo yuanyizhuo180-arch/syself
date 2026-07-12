@@ -3,6 +3,7 @@ import { generateId, getDb } from '@/lib/db';
 import { buildRouteGenerationUserMessage, ROUTE_GENERATION_SYSTEM_PROMPT } from '@/lib/prompts/route-generation';
 import { RouteComparisonSchema, type RouteComparison, validateRouteDiversity } from '@/lib/schemas/plan-route';
 import type { GoalUnderstanding } from '@/lib/schemas/goal-understanding';
+import { PersonalModel } from '@/lib/personal-model-integration';
 
 export function createRoutesHandler(
   generate: (understanding: GoalUnderstanding, rawGoal: string) => Promise<StructuredResult<RouteComparison>> =
@@ -47,3 +48,22 @@ export function createRoutesHandler(
 }
 
 export const POST = createRoutesHandler();
+
+export async function PUT(request: Request): Promise<Response> {
+  try {
+    const { goalId, routeId } = await request.json() as { goalId?: string; routeId?: string };
+    if (!goalId || !routeId) return Response.json({ code: 'INVALID_INPUT', userMessage: '请选择一条路线', retryable: false }, { status: 400 });
+    const db = getDb();
+    const selected = db.prepare('SELECT route_type FROM plan_route WHERE id = ? AND goal_id = ?').get(routeId, goalId) as { route_type: 'depth_first' | 'breadth_first' } | undefined;
+    if (!selected) return Response.json({ code: 'NOT_FOUND', userMessage: '路线不存在', retryable: false }, { status: 404 });
+    db.transaction(() => {
+      db.prepare("UPDATE plan_route SET status = 'rejected' WHERE goal_id = ?").run(goalId);
+      db.prepare("UPDATE plan_route SET status = 'selected' WHERE id = ?").run(routeId);
+    })();
+    PersonalModel.routeSelected(selected.route_type);
+    return Response.json({ goalId, routeId, status: 'selected' });
+  } catch (error) {
+    console.error('[API] route selection error', error);
+    return Response.json({ code: 'INTERNAL_ERROR', userMessage: '保存路线失败', retryable: true }, { status: 500 });
+  }
+}
