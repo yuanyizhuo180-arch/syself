@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
 
 import type { GoalUnderstandingResult } from '@/lib/schemas/goal-understanding';
@@ -16,10 +17,7 @@ export function UnderstandingClient() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!rawGoal) {
-      setError('没有收到目标描述，请返回首页重新填写。');
-      return;
-    }
+    if (!rawGoal) return;
     const controller = new AbortController();
     fetch('/api/ai/understand', {
       method: 'POST',
@@ -62,7 +60,7 @@ export function UnderstandingClient() {
     }
   }
 
-  if (error) return <main className="status-screen"><h1>暂时无法继续</h1><p>{error}</p><a href="/">返回首页</a></main>;
+  if (!rawGoal || error) return <main className="status-screen"><h1>暂时无法继续</h1><p>{error ?? '没有收到目标描述，请返回首页重新填写。'}</p><Link href="/">返回首页</Link></main>;
   if (!result) return <main className="status-screen"><p className="eyebrow">正在理解你的目标</p><h1>先把问题想清楚。</h1><p>我们正在区分事实、假设和缺失信息……</p></main>;
   return <UnderstandingPanel {...result} onConfirm={confirm} saving={saving} />;
 }

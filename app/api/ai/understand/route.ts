@@ -10,8 +10,6 @@ import {
   validateGoalUnderstanding,
 } from '@/lib/schemas/goal-understanding';
 
-type GenerateUnderstanding = () => Promise<StructuredResult<GoalUnderstanding>>;
-
 function json(body: unknown, status = 200): Response {
   return Response.json(body, { status });
 }

@@ -1,4 +1,5 @@
 import type { FormEventHandler } from 'react';
+import Link from 'next/link';
 
 import type { GoalUnderstanding } from '@/lib/schemas/goal-understanding';
 
@@ -22,7 +23,7 @@ export function UnderstandingPanel({
   return (
     <main className="workspace-shell">
       <header className="workspace-header">
-        <a href="/" className="wordmark"><span className="wordmark-seal">叙</span><span>叙己</span></a>
+        <Link href="/" className="wordmark"><span className="wordmark-seal">叙</span><span>叙己</span></Link>
         <span className="step-counter">01 / 03 · 理解目标</span>
       </header>
 

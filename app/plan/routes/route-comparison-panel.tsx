@@ -1,8 +1,9 @@
 import type { RouteComparison } from '@/lib/schemas/plan-route';
+import Link from 'next/link';
 
 export function RouteComparisonPanel({ comparison, selectedId, onSelect, goalId = '' }: { comparison: RouteComparison; selectedId: string | null; onSelect?: (id: string) => void; goalId?: string }) {
   return <main className="workspace-shell">
-    <header className="workspace-header"><a href="/" className="wordmark"><span className="wordmark-seal">叙</span><span>叙己</span></a><span className="step-counter">02 / 03 · 比较路线</span></header>
+    <header className="workspace-header"><Link href="/" className="wordmark"><span className="wordmark-seal">叙</span><span>叙己</span></Link><span className="step-counter">02 / 03 · 比较路线</span></header>
     <section className="route-intro"><p className="eyebrow">没有默认答案</p><h1>两种走法，你来决定。</h1><p>{comparison.comparison_summary}</p></section>
     <section className="route-grid">{comparison.routes.map((route) => {
       const selected = selectedId === route.id;
@@ -14,6 +15,6 @@ export function RouteComparisonPanel({ comparison, selectedId, onSelect, goalId 
         <button type="button" className="route-choice" onClick={() => route.id && onSelect?.(route.id)}>{selected ? '已选中' : '选择这条路线'}</button>
       </article>;
     })}</section>
-    {selectedId && <a className="primary-action route-next" href={`/plan/week?goalId=${encodeURIComponent(goalId)}`}>继续生成首周任务 →</a>}
+    {selectedId && <Link className="primary-action route-next" href={`/plan/week?goalId=${encodeURIComponent(goalId)}`}>继续生成首周任务 →</Link>}
   </main>;
 }
