@@ -12,15 +12,15 @@
 
 ## Overall Status
 - status: running
-- process: 10%
-- current_step: 2. 目标理解链路
+- process: 30%
+- current_step: 3. 路线生成、比较与选择
 
 ## Steps
 | step | description | status | note |
 | --- | --- | --- | --- |
-| 1 | 复查 Claude Code 修复与工程基线 | finished | typecheck、2 tests、build 通过；commit: pending |
-| 2 | 实现目标理解 API 与确认页面 | running | 测试先行；commit: pending |
-| 3 | 实现路线生成、比较与选择 | notrun | commit: pending |
+| 1 | 复查 Claude Code 修复与工程基线 | finished | typecheck、2 tests、build 通过；commit: 476688f |
+| 2 | 实现目标理解 API 与确认页面 | finished | API commit: 2014097；页面与确认写回 commit: pending |
+| 3 | 实现路线生成、比较与选择 | running | commit: pending |
 | 4 | 实现首周任务生成与确认 | notrun | commit: pending |
 | 5 | 实现今日执行、复盘与 Personal Model 写回 | notrun | commit: pending |
 | 6 | 完整闭环验证并形成 Claude Code 交接 | notrun | commit: pending |
@@ -29,3 +29,4 @@
 | time | status | process | update |
 | --- | --- | --- | --- |
 | 2026-07-12 21:29 +08:00 | running | 10% | Claude Code 两项阻断已修复；工程基线验证通过。Git 仓库恢复，可建立提交检查点。 |
+| 2026-07-12 21:37 +08:00 | running | 30% | 目标理解 API、确认写回和事实/假设/追问页面完成；6 tests 与 typecheck 通过。 |
