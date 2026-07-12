@@ -48,6 +48,7 @@ function initSchema(db: Database.Database) {
       success_criteria TEXT,
       target_date TEXT,
       primary_area TEXT,
+      current_state TEXT,
       status TEXT DEFAULT 'draft',
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
@@ -65,6 +66,16 @@ function initSchema(db: Database.Database) {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    -- 用户对 AI 追问的回答
+    CREATE TABLE IF NOT EXISTS follow_up_answers (
+      id TEXT PRIMARY KEY,
+      goal_id TEXT NOT NULL REFERENCES goal(id),
+      field TEXT NOT NULL,
+      question TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     -- 路线方案
     CREATE TABLE IF NOT EXISTS plan_route (
       id TEXT PRIMARY KEY,
@@ -78,6 +89,16 @@ function initSchema(db: Database.Database) {
       first_month_preview_json TEXT NOT NULL,
       user_profile_basis_json TEXT NOT NULL,
       status TEXT DEFAULT 'draft',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    -- 路线选择记录（用于 Personal Model 偏好学习）
+    CREATE TABLE IF NOT EXISTS route_selection (
+      id TEXT PRIMARY KEY,
+      goal_id TEXT NOT NULL REFERENCES goal(id),
+      selected_route_id TEXT NOT NULL REFERENCES plan_route(id),
+      rejected_route_id TEXT NOT NULL REFERENCES plan_route(id),
+      user_notes TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -141,6 +162,13 @@ function initSchema(db: Database.Database) {
       updated_at TEXT DEFAULT (datetime('now'))
     );
   `);
+
+  // 兼容旧版 goal 表（没有 current_state 列）——安全补齐
+  try {
+    db.exec(`ALTER TABLE goal ADD COLUMN current_state TEXT`);
+  } catch {
+    // 列已存在，忽略
+  }
 }
 
 // ============================================================
