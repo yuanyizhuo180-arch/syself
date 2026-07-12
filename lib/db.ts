@@ -7,6 +7,7 @@
  * 所有查询以 goal_id 为租户键（MVP 0.1 单用户简化处理）
  */
 
+import fs from 'node:fs';
 import Database from 'better-sqlite3';
 import path from 'path';
 
@@ -20,7 +21,6 @@ export function getDb(): Database.Database {
   if (!_db) {
     const dbPath = path.join(process.cwd(), 'data', 'mvp-0.1.db');
     // 确保 data 目录存在
-    const fs = require('fs');
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
