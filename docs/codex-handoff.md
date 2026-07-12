@@ -237,16 +237,50 @@ if (!result) {
 }
 ```
 
-### 4.2 Personal Model 更新时机
+### 4.2 Personal Model 更新时机（使用集成层）
 
-每次以下操作后调用 `applyEvent()`：
-- 任务标记完成 → `{ type: 'task_completed', ... }`
-- 任务跳过 → `{ type: 'task_skipped', ... }`
-- 用户修改 AI 建议 → `{ type: 'task_modified', ... }`
-- 路线选择 → `{ type: 'route_selected', ... }`
-- 复盘完成 → `{ type: 'reflection_completed', ... }`
+**已创建 `lib/personal-model-integration.ts`**，API Route 无需直接操作 `personal_model` 表。使用语义化 API：
 
-更新后调用 `getDb()` 写回 `personal_model` 表。
+```typescript
+import { PersonalModel } from '@/lib/personal-model-integration';
+
+// 目标确认时
+PersonalModel.goalCreated('skill_acquisition');
+
+// 路线选择时
+PersonalModel.routeSelected('depth_first');
+
+// 任务完成时
+PersonalModel.taskCompleted({
+  taskId: 'xxx',
+  timeBlock: 'morning',
+  energyLevel: 'high',
+  actualMinutes: 50,
+  estimatedMinutes: 45,
+});
+
+// 任务跳过时
+PersonalModel.taskSkipped({
+  taskId: 'xxx',
+  timeBlock: 'evening',
+  energyLevel: 'high',
+  reason: 'no_time',
+});
+
+// 用户修改 AI 任务时
+PersonalModel.taskModified('task-1', ['title', 'estimated_minutes'], 'skill_acquisition');
+
+// 复盘完成时
+PersonalModel.reflectionCompleted('2026-07-12', 4);
+
+// 注入 AI prompt 时
+const summary = PersonalModel.getSummary();
+```
+
+**关键约束：**
+- Personal Model 更新失败不阻塞主流程（内部 try-catch）
+- 所有更新是同步的（better-sqlite3），无竞态条件
+- `getSummary()` 在 dataPoints < 5 时返回"暂无数据"
 
 ### 4.3 页面刷新状态恢复
 
