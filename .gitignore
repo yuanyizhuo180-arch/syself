@@ -1,0 +1,47 @@
+# dependencies and D-drive-local package caches
+node_modules/
+.pnpm-home/
+.pnpm-store/
+.pnpm-cache/
+.pnpm-state/
+.npm-cache/
+
+# Next.js and test output
+.next/
+coverage/
+playwright-report/
+test-results/
+
+# build
+dist/
+build/
+
+# local data and secrets
+data/
+*.db
+*.db-journal
+*.db-wal
+.env*
+!.env.example
+
+# python (future)
+.venv/
+__pycache__/
+.pytest_cache/
+
+# ide
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# operating system
+.DS_Store
+Thumbs.db
+
+# debug
+npm-debug.log*
+pnpm-debug.log*
+
+# docker
+docker-compose.override.yml
