@@ -92,6 +92,8 @@ export function computeDailyStats(events: ExecutionEvent[]): DailyStats {
 export const AIInsightSchema = z.object({
   one_line_insight: z
     .string()
+    .min(5, '洞察不能为空')
+    .max(120, '洞察不能超过 120 个字符（约 30 个中文字）')
     .describe('用一句话总结今天最值得注意的发现，不超过 30 字'),
 
   positive_observation: z
@@ -101,6 +103,8 @@ export const AIInsightSchema = z.object({
 
   improvement_hint: z
     .string()
+    .min(1)
+    .max(200, '微调建议不能超过 200 个字符')
     .describe('明天可以微调的一件事。只给一条建议，不要列清单。'),
 
   adjustment_suggestion: z.object({
