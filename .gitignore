@@ -50,3 +50,4 @@ docker-compose.override.yml
 .open-next/
 .playwright-mcp/
 tsconfig.tsbuildinfo
+.corepack/
