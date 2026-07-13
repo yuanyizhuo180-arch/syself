@@ -389,3 +389,10 @@ textarea {
 .route-card.selected .route-choice { background: var(--ink); color: var(--paper); }
 .route-next { margin-top: 28px; text-decoration: none; }
 @media (max-width: 800px) { .route-grid { grid-template-columns: 1fr; } }
+.capacity-readout { display: inline-block; margin-top: 16px; padding: 10px 14px; background: var(--acid); }
+.week-list { display: grid; gap: 1px; margin-bottom: 28px; background: var(--line); }
+.week-list article { display: grid; grid-template-columns: 80px 1fr; gap: 22px; padding: 22px; background: var(--paper); }
+.week-list article > span { color: var(--moss); font: 700 18px var(--serif); }
+.week-list h2 { margin: 0; font: 500 25px var(--serif); }
+.week-list p { margin: 8px 0; color: var(--muted); }
+.week-list small { color: var(--moss); }
