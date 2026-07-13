@@ -19,7 +19,7 @@ import type { z } from 'zod';
 // ============================================================
 
 const AI_CONFIG = {
-  model: openai('gpt-4o'),
+  model: openai(process.env.OPENAI_MODEL || 'deepseek-chat'),
   defaultTemperature: 0.3, // 规划类任务使用低随机性
   creativeTemperature: 0.7, // 复盘洞察可以使用稍高随机性
   maxRetries: 2,
@@ -148,7 +148,7 @@ export function createAIMetadata(
   return {
     promptId,
     promptVersion,
-    model: 'gpt-4o',
+    model: process.env.OPENAI_MODEL || 'deepseek-chat',
     temperature: AI_CONFIG.defaultTemperature,
     attempts,
     validationStatus: success
