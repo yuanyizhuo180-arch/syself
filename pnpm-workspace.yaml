@@ -1,3 +1,5 @@
+packages: []
+
 storeDir: .pnpm-home/store
 cacheDir: .pnpm-cache
 stateDir: .pnpm-state
