@@ -1,5 +1,5 @@
 import { generateStructured, type StructuredResult } from '@/lib/ai';
-import { generateId, getDb } from '@/lib/db';
+import { generateId, get, run, transaction } from '@/lib/db';
 import { buildRouteGenerationUserMessage, ROUTE_GENERATION_SYSTEM_PROMPT } from '@/lib/prompts/route-generation';
 import { RouteComparisonSchema, type RouteComparison, validateRouteDiversity } from '@/lib/schemas/plan-route';
 import type { GoalUnderstanding } from '@/lib/schemas/goal-understanding';
@@ -24,8 +24,10 @@ export function createRoutesHandler(
     try {
       const { goalId } = await request.json() as { goalId?: string };
       if (!goalId) return Response.json({ code: 'INVALID_INPUT', userMessage: '缺少目标 ID', retryable: false }, { status: 400 });
-      const db = getDb();
-      const row = db.prepare(`SELECT g.raw_input, u.extracted_json FROM goal g JOIN goal_understanding u ON u.goal_id = g.id WHERE g.id = ? ORDER BY u.created_at DESC LIMIT 1`).get(goalId) as { raw_input: string; extracted_json: string } | undefined;
+      const row = await get<{ raw_input: string; extracted_json: string }>(
+        `SELECT g.raw_input, u.extracted_json FROM goal g JOIN goal_understanding u ON u.goal_id = g.id WHERE g.id = ? ORDER BY u.created_at DESC LIMIT 1`,
+        goalId,
+      );
       if (!row) return Response.json({ code: 'NOT_FOUND', userMessage: '找不到目标理解结果', retryable: false }, { status: 404 });
 
       const generated = await generate(JSON.parse(row.extracted_json) as GoalUnderstanding, row.raw_input);
@@ -33,12 +35,16 @@ export function createRoutesHandler(
       const diversity = validateRouteDiversity(generated.result.routes);
       if (!diversity.valid) return Response.json({ code: 'ROUTES_TOO_SIMILAR', userMessage: '两条路线差异不足，请重新生成', retryable: true, failures: diversity.failures }, { status: 422 });
 
-      const insert = db.prepare(`INSERT INTO plan_route (id, goal_id, route_type, title, thesis, phases_json, advantages_json, risks_json, first_month_preview_json, user_profile_basis_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`);
-      const savedRoutes = db.transaction(() => generated.result!.routes.map((route) => {
-        const id = generateId();
-        insert.run(id, goalId, route.route_type, route.title, route.thesis, JSON.stringify(route.phases), JSON.stringify(route.advantages), JSON.stringify(route.risks), JSON.stringify(route.first_month_preview), JSON.stringify(route.user_profile_basis));
-        return { ...route, id };
-      }))();
+      const savedRoutes = await transaction(async () =>
+        Promise.all(generated.result!.routes.map(async (route) => {
+          const id = generateId();
+          await run(
+            `INSERT INTO plan_route (id, goal_id, route_type, title, thesis, phases_json, advantages_json, risks_json, first_month_preview_json, user_profile_basis_json, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
+            id, goalId, route.route_type, route.title, route.thesis, JSON.stringify(route.phases), JSON.stringify(route.advantages), JSON.stringify(route.risks), JSON.stringify(route.first_month_preview), JSON.stringify(route.user_profile_basis),
+          );
+          return { ...route, id };
+        })),
+      );
       return Response.json({ ...generated.result, routes: savedRoutes, diversity });
     } catch (error) {
       console.error('[API] /api/ai/routes error', error);
@@ -53,13 +59,12 @@ export async function PUT(request: Request): Promise<Response> {
   try {
     const { goalId, routeId } = await request.json() as { goalId?: string; routeId?: string };
     if (!goalId || !routeId) return Response.json({ code: 'INVALID_INPUT', userMessage: '请选择一条路线', retryable: false }, { status: 400 });
-    const db = getDb();
-    const selected = db.prepare('SELECT route_type FROM plan_route WHERE id = ? AND goal_id = ?').get(routeId, goalId) as { route_type: 'depth_first' | 'breadth_first' } | undefined;
+    const selected = await get<{ route_type: 'depth_first' | 'breadth_first' }>('SELECT route_type FROM plan_route WHERE id = ? AND goal_id = ?', routeId, goalId);
     if (!selected) return Response.json({ code: 'NOT_FOUND', userMessage: '路线不存在', retryable: false }, { status: 404 });
-    db.transaction(() => {
-      db.prepare("UPDATE plan_route SET status = 'rejected' WHERE goal_id = ?").run(goalId);
-      db.prepare("UPDATE plan_route SET status = 'selected' WHERE id = ?").run(routeId);
-    })();
+    await transaction(async () => {
+      await run("UPDATE plan_route SET status = 'rejected' WHERE goal_id = ?", goalId);
+      await run("UPDATE plan_route SET status = 'selected' WHERE id = ?", routeId);
+    });
     PersonalModel.routeSelected(selected.route_type);
     return Response.json({ goalId, routeId, status: 'selected' });
   } catch (error) {

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createRoutesHandler, PUT } from '@/app/api/ai/routes/route';
-import { closeDb, generateId, getDb } from '@/lib/db';
+import { closeDb, generateId, getTestDb as getDb } from '@/lib/db';
 
 const route = (type: 'depth_first' | 'breadth_first', hours: number) => ({
   route_type: type,

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { POST } from '@/app/api/tasks/[id]/complete/route';
 import { POST as skip } from '@/app/api/tasks/[id]/skip/route';
-import { closeDb, generateId, getDb } from '@/lib/db';
+import { closeDb, generateId, getTestDb as getDb } from '@/lib/db';
 
 afterEach(() => closeDb());
 

@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import Home from '@/app/page';
-import { closeDb, getDb } from '@/lib/db';
+import { closeDb, getTestDb as getDb } from '@/lib/db';
 
 describe('MVP 首页骨架', () => {
   it('聚焦单一目标输入并说明完整规划闭环', () => {

@@ -1,5 +1,5 @@
 import { generateStructured, type StructuredResult } from '@/lib/ai';
-import { generateId, getDb } from '@/lib/db';
+import { generateId, run, transaction } from '@/lib/db';
 import {
   buildGoalUnderstandingUserMessage,
   GOAL_UNDERSTANDING_SYSTEM_PROMPT,
@@ -58,29 +58,14 @@ export function createUnderstandHandler(
       const validation = validateGoalUnderstanding(result);
       const goalId = generateId();
       const understandingId = generateId();
-      const db = getDb();
 
-      const transaction = db.transaction(() => {
-        db.prepare('INSERT INTO goal (id, raw_input, status) VALUES (?, ?, ?)').run(
-          goalId,
-          rawGoal,
-          'draft',
-        );
-        db.prepare(
-          `INSERT INTO goal_understanding
-            (id, goal_id, extracted_json, assumptions_json, missing_info_json, confidence, prompt_version)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        ).run(
-          understandingId,
-          goalId,
-          JSON.stringify(result),
-          JSON.stringify(result.assumptions),
-          JSON.stringify(result.missing_information),
-          result.confidence,
-          'v1',
+      await transaction(async () => {
+        await run('INSERT INTO goal (id, raw_input, status) VALUES (?, ?, ?)', goalId, rawGoal, 'draft');
+        await run(
+          `INSERT INTO goal_understanding (id, goal_id, extracted_json, assumptions_json, missing_info_json, confidence, prompt_version) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          understandingId, goalId, JSON.stringify(result), JSON.stringify(result.assumptions), JSON.stringify(result.missing_information), result.confidence, 'v1',
         );
       });
-      transaction();
 
       const followUpQuestions = result.missing_information.filter(
         (item) => item.priority === 'critical',

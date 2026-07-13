@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createUnderstandHandler } from '@/app/api/ai/understand/route';
-import { closeDb, getDb } from '@/lib/db';
+import { closeDb, getTestDb as getDb } from '@/lib/db';
 
 const validUnderstanding = {
   goal_type: 'skill_acquisition' as const,

@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.11",
+    "@vercel/postgres": "^0.10.0",
     "ai": "^7.0.22",
     "better-sqlite3": "^12.11.1",
     "next": "^16.2.10",

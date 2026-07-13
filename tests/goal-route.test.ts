@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { PUT } from '@/app/api/goal/route';
-import { closeDb, generateId, getDb } from '@/lib/db';
+import { closeDb, generateId, getTestDb as getDb } from '@/lib/db';
 
 afterEach(() => closeDb());
 
