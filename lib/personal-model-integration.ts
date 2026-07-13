@@ -96,14 +96,22 @@ async function recordEventAsync(event: PersonalModelEvent): Promise<{
     const { model: updatedModel, changes } = applyEvent(model, event);
 
     await run(
-      `UPDATE personal_model SET behavior_patterns_json = ?, goal_preferences_json = ?, calibration_json = ?, data_points = ?, confidence = ?, updated_at = ? WHERE id = ?`,
+      `INSERT INTO personal_model (id, behavior_patterns_json, goal_preferences_json, calibration_json, data_points, confidence, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         behavior_patterns_json = excluded.behavior_patterns_json,
+         goal_preferences_json = excluded.goal_preferences_json,
+         calibration_json = excluded.calibration_json,
+         data_points = excluded.data_points,
+         confidence = excluded.confidence,
+         updated_at = excluded.updated_at`,
+      'singleton',
       JSON.stringify(updatedModel.behaviorPatterns),
       JSON.stringify(updatedModel.goalPreferences),
       JSON.stringify(updatedModel.calibration),
       updatedModel.dataPoints,
       updatedModel.confidence,
       updatedModel.updatedAt,
-      'singleton',
     );
 
     // 更新缓存
