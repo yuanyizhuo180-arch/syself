@@ -79,7 +79,8 @@ export function createReflectHandler(
           generateId(), goalId, date, JSON.stringify(stats), userRating, userNote || null, JSON.stringify(incompleteReasons), JSON.stringify(generated.result),
         );
       });
-      const personalModel = PersonalModel.reflectionCompleted(date, userRating);
+      await PersonalModel.reflectionCompleted(date, userRating);
+      const personalModel = { updated: true };
       return Response.json({ goalId, date, stats, insight: generated.result, personalModel });
     } catch (error) {
       console.error('[API] /api/ai/reflect error', error);

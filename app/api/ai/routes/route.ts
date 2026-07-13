@@ -65,7 +65,7 @@ export async function PUT(request: Request): Promise<Response> {
       await run("UPDATE plan_route SET status = 'rejected' WHERE goal_id = ?", goalId);
       await run("UPDATE plan_route SET status = 'selected' WHERE id = ?", routeId);
     });
-    PersonalModel.routeSelected(selected.route_type);
+    await PersonalModel.routeSelected(selected.route_type);
     return Response.json({ goalId, routeId, status: 'selected' });
   } catch (error) {
     console.error('[API] route selection error', error);

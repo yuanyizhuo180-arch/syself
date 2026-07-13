@@ -12,7 +12,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       await run("UPDATE task SET status = 'done', actual_minutes = ?, updated_at = datetime('now') WHERE id = ?", actualMinutes, id);
       await run('INSERT INTO execution_event (id, task_id, goal_id, date, status, actual_minutes, difficulty, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', generateId(), id, task.goal_id, new Date().toISOString().slice(0, 10), 'done', actualMinutes, body.difficulty ?? null, body.note ?? null);
     });
-    PersonalModel.taskCompleted({ taskId: id, timeBlock: task.time_block ?? 'unspecified', energyLevel: task.energy_level, actualMinutes: actualMinutes ?? task.estimated_minutes, estimatedMinutes: task.estimated_minutes });
+    await PersonalModel.taskCompleted({ taskId: id, timeBlock: task.time_block ?? 'unspecified', energyLevel: task.energy_level, actualMinutes: actualMinutes ?? task.estimated_minutes, estimatedMinutes: task.estimated_minutes });
     return Response.json({ taskId: id, status: 'done' });
   } catch (error) {
     console.error('[API] task complete error', error);

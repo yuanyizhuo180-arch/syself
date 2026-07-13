@@ -5,5 +5,7 @@ virtualStoreDir: node_modules/.pnpm
 
 allowBuilds:
   better-sqlite3: true
-  bufferutil: set this to true or false
+  bufferutil: true
+  esbuild: true
   sharp: true
+  workerd: true

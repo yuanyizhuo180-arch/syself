@@ -8,6 +8,7 @@
  */
 
 import type Database from 'better-sqlite3';
+import { createD1Adapter, type D1DatabaseLike } from './d1-adapter';
 
 // ============================================================
 // 后端检测
@@ -24,6 +25,21 @@ const isPostgres = !!(
 // ============================================================
 
 let _pgPool: import('@vercel/postgres').VercelPool | null = null;
+let _d1Adapter: ReturnType<typeof createD1Adapter> | null = null;
+
+async function getD1Adapter(): Promise<ReturnType<typeof createD1Adapter> | null> {
+  if (_d1Adapter) return _d1Adapter;
+  try {
+    const { getCloudflareContext } = await import('@opennextjs/cloudflare');
+    const context = await getCloudflareContext();
+    const env = context.env as unknown as { DB?: D1DatabaseLike };
+    if (!env.DB) return null;
+    _d1Adapter = createD1Adapter(env.DB);
+    return _d1Adapter;
+  } catch {
+    return null;
+  }
+}
 
 async function getPgPool(): Promise<import('@vercel/postgres').VercelPool> {
   if (!_pgPool) {
@@ -165,8 +181,11 @@ let _sqliteDb: Database.Database | null = null;
 
 function getSqliteDb(): Database.Database {
   if (!_sqliteDb) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- SQLite is a Node-only local-development fallback.
     const fs = require('fs');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- SQLite is a Node-only local-development fallback.
     const path = require('path');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- SQLite is a Node-only local-development fallback.
     const Database = require('better-sqlite3');
     const dbPath = path.join(process.cwd(), 'data', 'mvp-0.1.db');
     const dir = path.dirname(dbPath);
@@ -245,6 +264,8 @@ export async function run(sql: string, ...params: unknown[]): Promise<{ changes:
     const { rowCount } = await pool.query(toPgParams(sql), params);
     return { changes: rowCount ?? 0 };
   }
+  const d1 = await getD1Adapter();
+  if (d1) return d1.run(sql, ...params);
   // SQLite 同步 → 包装为 Promise
   const db = getSqliteDb();
   const stmt = db.prepare(sql);
@@ -258,6 +279,8 @@ export async function get<T>(sql: string, ...params: unknown[]): Promise<T | und
     const { rows } = await pool.query(toPgParams(sql), params);
     return rows[0] as T | undefined;
   }
+  const d1 = await getD1Adapter();
+  if (d1) return d1.get<T>(sql, ...params);
   const db = getSqliteDb();
   return db.prepare(sql).get(...params) as T | undefined;
 }
@@ -268,6 +291,8 @@ export async function all<T>(sql: string, ...params: unknown[]): Promise<T[]> {
     const { rows } = await pool.query(toPgParams(sql), params);
     return rows as T[];
   }
+  const d1 = await getD1Adapter();
+  if (d1) return d1.all<T>(sql, ...params);
   const db = getSqliteDb();
   return db.prepare(sql).all(...params) as T[];
 }
@@ -285,6 +310,8 @@ export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
       throw e;
     }
   }
+  const d1 = await getD1Adapter();
+  if (d1) return fn();
   // SQLite: BEGIN/COMMIT/ROLLBACK 手动事务
   // fn 内的 run/get/all 在 SQLite 模式下同步 resolve，不会真正挂起
   const db = getSqliteDb();

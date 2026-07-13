@@ -15,7 +15,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       await run("UPDATE task SET status = 'skipped', skip_reason = ?, updated_at = datetime('now') WHERE id = ?", reason, id);
       await run('INSERT INTO execution_event (id, task_id, goal_id, date, status, skip_reason) VALUES (?, ?, ?, ?, ?, ?)', generateId(), id, task.goal_id, new Date().toISOString().slice(0, 10), 'skipped', reason);
     });
-    PersonalModel.taskSkipped({ taskId: id, timeBlock: task.time_block ?? 'unspecified', energyLevel: task.energy_level, reason });
+    await PersonalModel.taskSkipped({ taskId: id, timeBlock: task.time_block ?? 'unspecified', energyLevel: task.energy_level, reason });
     return Response.json({ taskId: id, status: 'skipped' });
   } catch (error) {
     console.error('[API] task skip error', error);

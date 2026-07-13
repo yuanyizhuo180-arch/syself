@@ -118,10 +118,8 @@ async function recordEventAsync(event: PersonalModelEvent): Promise<{
 }
 
 /** 同步触发 + 后台执行，调用方不需 await */
-function recordEvent(event: PersonalModelEvent): void {
-  recordEventAsync(event).catch(() => {
-    // 静默失败——Personal Model 更新不应阻塞主流程
-  });
+async function recordEvent(event: PersonalModelEvent): Promise<void> {
+  await recordEventAsync(event);
 }
 
 // ============================================================
@@ -146,32 +144,32 @@ function getPersonalModelSummary(): string {
 // ============================================================
 
 export const PersonalModel = {
-  goalCreated(goalType: string) {
-    recordEvent({ type: 'goal_created', goalType });
+  async goalCreated(goalType: string) {
+    await recordEvent({ type: 'goal_created', goalType });
   },
 
-  routeSelected(routeType: 'depth_first' | 'breadth_first') {
-    recordEvent({ type: 'route_selected', routeType });
+  async routeSelected(routeType: 'depth_first' | 'breadth_first') {
+    await recordEvent({ type: 'route_selected', routeType });
   },
 
-  quadrantOverridden(taskId: string, aiQuadrant: string, userQuadrant: string) {
-    recordEvent({ type: 'quadrant_overridden', taskId, aiQuadrant, userQuadrant });
+  async quadrantOverridden(taskId: string, aiQuadrant: string, userQuadrant: string) {
+    await recordEvent({ type: 'quadrant_overridden', taskId, aiQuadrant, userQuadrant });
   },
 
-  taskCompleted(params: { taskId: string; timeBlock: string; energyLevel: string; actualMinutes: number; estimatedMinutes: number }) {
-    recordEvent({ type: 'task_completed', ...params });
+  async taskCompleted(params: { taskId: string; timeBlock: string; energyLevel: string; actualMinutes: number; estimatedMinutes: number }) {
+    await recordEvent({ type: 'task_completed', ...params });
   },
 
-  taskSkipped(params: { taskId: string; timeBlock: string; energyLevel: string; reason: string }) {
-    recordEvent({ type: 'task_skipped', ...params });
+  async taskSkipped(params: { taskId: string; timeBlock: string; energyLevel: string; reason: string }) {
+    await recordEvent({ type: 'task_skipped', ...params });
   },
 
-  taskModified(taskId: string, fieldsModified: string[], goalType: string) {
-    recordEvent({ type: 'task_modified', taskId, fieldsModified, goalType });
+  async taskModified(taskId: string, fieldsModified: string[], goalType: string) {
+    await recordEvent({ type: 'task_modified', taskId, fieldsModified, goalType });
   },
 
-  reflectionCompleted(date: string, rating: number) {
-    recordEvent({ type: 'reflection_completed', date, rating });
+  async reflectionCompleted(date: string, rating: number) {
+    await recordEvent({ type: 'reflection_completed', date, rating });
   },
 
   getSummary() {

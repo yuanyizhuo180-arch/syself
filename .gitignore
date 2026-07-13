@@ -45,3 +45,8 @@ pnpm-debug.log*
 
 # docker
 docker-compose.override.yml
+
+.vercel
+.open-next/
+.playwright-mcp/
+tsconfig.tsbuildinfo
