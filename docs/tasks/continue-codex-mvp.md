@@ -26,8 +26,8 @@
 | 2 | 目标理解 API 与确认页面 | finished | commits: 2014097, 6d52b7f |
 | 3 | 路线生成、比较与选择 | finished | commits: 26c72db, eb32aee, 6db3cc7 |
 | 4 | 首周任务生成与确认 | finished | commits: b9f85e5, f403075 |
-| 5 | 今日执行、每日复盘与 Personal Model 写回 | finished | Daily Reflection API、三题 emoji 复盘页、AI 洞察展示与持久化完成；commit: pending |
-| 6 | 完整闭环验证与 Claude Code 交接 | finished | 65 tests、typecheck、lint（0 error）和 production build 通过；Daily Reflection Prompt 评估已由 91985d4 完成；commit: pending |
+| 5 | 今日执行、每日复盘与 Personal Model 写回 | finished | Daily Reflection API、三题 emoji 复盘页、AI 洞察展示与持久化完成；commit: d7b115c |
+| 6 | 完整闭环验证与 Claude Code 交接 | finished | 65 tests、typecheck、lint（0 error）和 production build 通过；Daily Reflection Prompt 评估已由 91985d4 完成；commit: d7b115c |
 
 ## Update Log
 
