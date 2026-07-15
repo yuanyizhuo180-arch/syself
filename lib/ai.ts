@@ -8,13 +8,13 @@ import type { z } from 'zod';
 
 const openaiProvider = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://api.deepseek.com/v1',
+  baseURL: process.env.OPENAI_BASE_URL || 'https://api.apib.ai/v1',
 });
 
 // 使用 .chat() 强制走 Chat Completions API
 // DeepSeek 不支持 OpenAI Responses API（/responses），只支持 /chat/completions
 const AI_CONFIG = {
-  model: openaiProvider.chat(process.env.OPENAI_MODEL || 'deepseek-chat'),
+  model: openaiProvider.chat(process.env.OPENAI_MODEL || 'gpt-5'),
   defaultTemperature: 0.3,
   creativeTemperature: 0.7,
   maxRetries: 2,

@@ -5,8 +5,8 @@
   "compatibility_date": "2026-07-13",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "OPENAI_MODEL": "deepseek-chat",
-    "OPENAI_BASE_URL": "https://api.deepseek.com/v1"
+    "OPENAI_MODEL": "gpt-5",
+    "OPENAI_BASE_URL": "https://api.apib.ai/v1"
   },
   "assets": {
     "directory": ".open-next/assets",
