@@ -3,11 +3,16 @@
  * 使用 generateText + JSON 解析替代 generateObject（DeepSeek 不支持 JSON Schema 模式）
  */
 import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { createOpenAI } from '@ai-sdk/openai';
 import type { z } from 'zod';
 
+const openaiProvider = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+});
+
 const AI_CONFIG = {
-  model: openai(process.env.OPENAI_MODEL || 'deepseek-chat'),
+  model: openaiProvider(process.env.OPENAI_MODEL || 'deepseek-chat'),
   defaultTemperature: 0.3,
   creativeTemperature: 0.7,
   maxRetries: 2,

@@ -4,6 +4,10 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-07-13",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "OPENAI_MODEL": "deepseek-chat",
+    "OPENAI_BASE_URL": "https://api.deepseek.com/v1"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
