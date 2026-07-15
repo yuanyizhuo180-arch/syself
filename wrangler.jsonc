@@ -8,12 +8,12 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  "routes": [
-    {
-      "pattern": "tw4.ip-ddns.com",
-      "custom_domain": true
-    }
-  ],
+  // "routes": [
+  //   {
+  //     "pattern": "tw4.ip-ddns.com",
+  //     "custom_domain": true
+  //   }
+  // ],
   "d1_databases": [
     {
       "binding": "DB",
