@@ -22,7 +22,7 @@
     {
       "binding": "DB",
       "database_name": "syself-db",
-      "database_id": "be4300c7-f8a4-446c-840e-51fca4f476aa",
+      "database_id": "d4dddc4d-5842-4974-a869-b3a13c655a2e",
       "migrations_dir": "migrations"
     }
   ],
