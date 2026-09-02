@@ -10,5 +10,6 @@ describe('决策路径', () => {
     expect(html).toContain('每一步都有来处');
     expect(html).toContain('每周只能投入五小时');
     expect(html).toContain('从这里重新规划');
+    expect(html).toContain('aria-label="从路线已选择重新规划"');
   });
 });
