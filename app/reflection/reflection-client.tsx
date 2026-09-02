@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { ReflectionPanel } from './reflection-panel';
 import type { AIInsight } from '@/lib/schemas/reflection';
+import { WorkspaceShell } from '@/app/workspace/workspace-shell';
 
 export function ReflectionClient() {
   const [goalId, setGoalId] = useState<string | null>(null);
@@ -29,11 +29,10 @@ export function ReflectionClient() {
     } finally { setLoading(false); }
   }
 
-  return <main className="workspace-shell reflection-shell">
-    <header className="workspace-header"><Link className="wordmark" href="/"><span className="wordmark-seal">S</span>syself</Link><span className="step-counter">日终复盘</span></header>
+  return <WorkspaceShell active="reflection" goalName="当前主目标"><div className="reflection-shell">
     <div className="reflection-intro"><p className="eyebrow">DAILY CHECK-IN · {date}</p><h1>给今天一个<br /><em>清晰的收尾。</em></h1><p>不用解释自己，只记录发生了什么。我们从中为明天留出一个更轻的选择。</p></div>
     {!goalId && !error && <p className="empty-state">正在读取当前目标…</p>}
     {error && <p className="form-error" role="alert">{error}</p>}
     <ReflectionPanel loading={loading} onSubmit={submit} insight={insight} />
-  </main>;
+  </div></WorkspaceShell>;
 }
