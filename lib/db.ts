@@ -170,6 +170,23 @@ async function initPgSchema(pool: import('@vercel/postgres').VercelPool) {
       confidence DOUBLE PRECISION DEFAULT 0,
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS planning_branch (
+      id TEXT PRIMARY KEY, goal_id TEXT NOT NULL REFERENCES goal(id), parent_branch_id TEXT REFERENCES planning_branch(id),
+      base_decision_event_id TEXT, status TEXT NOT NULL DEFAULT 'active', reason TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS goal_work_node (
+      id TEXT PRIMARY KEY, goal_id TEXT NOT NULL REFERENCES goal(id), parent_id TEXT REFERENCES goal_work_node(id),
+      branch_id TEXT NOT NULL REFERENCES planning_branch(id), node_type TEXT NOT NULL, title TEXT NOT NULL, success_criteria TEXT NOT NULL,
+      start_date TEXT NOT NULL, end_date TEXT NOT NULL, status TEXT NOT NULL, source TEXT NOT NULL, route_phase_ref TEXT,
+      supersedes_id TEXT REFERENCES goal_work_node(id), created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(), completed_at TIMESTAMPTZ
+    );
+    CREATE TABLE IF NOT EXISTS decision_event (
+      id TEXT PRIMARY KEY, goal_id TEXT NOT NULL REFERENCES goal(id), branch_id TEXT NOT NULL REFERENCES planning_branch(id),
+      event_type TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT, before_json TEXT, after_json TEXT,
+      rationale TEXT, impact_json TEXT NOT NULL DEFAULT '{}', created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    ALTER TABLE task ADD COLUMN IF NOT EXISTS work_node_id TEXT REFERENCES goal_work_node(id);
   `);
 }
 
@@ -231,7 +248,7 @@ function initSqliteSchema(db: Database.Database) {
       id TEXT PRIMARY KEY, goal_id TEXT NOT NULL REFERENCES goal(id), route_id TEXT REFERENCES plan_route(id),
       title TEXT NOT NULL, completion_criteria TEXT, minimum_action TEXT, estimated_minutes INTEGER,
       actual_minutes INTEGER, quadrant TEXT DEFAULT 'important_not_urgent', time_block TEXT, day_date TEXT,
-      energy_level TEXT DEFAULT 'medium', status TEXT DEFAULT 'planned', skip_reason TEXT, partial_note TEXT,
+      energy_level TEXT DEFAULT 'medium', work_node_id TEXT REFERENCES goal_work_node(id), status TEXT DEFAULT 'planned', skip_reason TEXT, partial_note TEXT,
       user_modified_fields TEXT DEFAULT '[]', created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -250,8 +267,24 @@ function initSqliteSchema(db: Database.Database) {
       goal_preferences_json TEXT DEFAULT '{}', calibration_json TEXT DEFAULT '{}', data_points INTEGER DEFAULT 0,
       confidence REAL DEFAULT 0, updated_at TEXT DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS planning_branch (
+      id TEXT PRIMARY KEY, goal_id TEXT NOT NULL REFERENCES goal(id), parent_branch_id TEXT REFERENCES planning_branch(id),
+      base_decision_event_id TEXT, status TEXT NOT NULL DEFAULT 'active', reason TEXT, created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS goal_work_node (
+      id TEXT PRIMARY KEY, goal_id TEXT NOT NULL REFERENCES goal(id), parent_id TEXT REFERENCES goal_work_node(id),
+      branch_id TEXT NOT NULL REFERENCES planning_branch(id), node_type TEXT NOT NULL, title TEXT NOT NULL, success_criteria TEXT NOT NULL,
+      start_date TEXT NOT NULL, end_date TEXT NOT NULL, status TEXT NOT NULL, source TEXT NOT NULL, route_phase_ref TEXT,
+      supersedes_id TEXT REFERENCES goal_work_node(id), created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), completed_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS decision_event (
+      id TEXT PRIMARY KEY, goal_id TEXT NOT NULL REFERENCES goal(id), branch_id TEXT NOT NULL REFERENCES planning_branch(id),
+      event_type TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT, before_json TEXT, after_json TEXT,
+      rationale TEXT, impact_json TEXT NOT NULL DEFAULT '{}', created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
   try { db.exec('ALTER TABLE goal ADD COLUMN current_state TEXT'); } catch { /* 列已存在 */ }
+  try { db.exec('ALTER TABLE task ADD COLUMN work_node_id TEXT REFERENCES goal_work_node(id)'); } catch { /* 列已存在 */ }
 }
 
 // ============================================================

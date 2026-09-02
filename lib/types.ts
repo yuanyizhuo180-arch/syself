@@ -10,6 +10,9 @@
 // ============================================================
 
 export type GoalStatus = 'draft' | 'active' | 'completed';
+export type GoalWorkNodeStatus = 'suggested' | 'active' | 'completed' | 'paused' | 'carried_forward' | 'archived';
+export type GoalWorkNodeType = 'month' | 'week';
+export type PlanningBranchStatus = 'active' | 'superseded';
 
 export type GoalType =
   | 'skill_acquisition'
