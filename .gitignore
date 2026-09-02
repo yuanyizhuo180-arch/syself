@@ -51,3 +51,4 @@ docker-compose.override.yml
 .playwright-mcp/
 tsconfig.tsbuildinfo
 .corepack/
+.worktrees/
