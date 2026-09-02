@@ -15,5 +15,6 @@ describe('目标工作树', () => {
     expect(html).toContain('新建月目标');
     expect(html).toContain('新建周目标');
     expect(html).toContain('生成 AI 建议');
+    expect(html).toContain('暂停');
   });
 });
