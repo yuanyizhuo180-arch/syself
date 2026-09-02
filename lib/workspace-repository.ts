@@ -50,3 +50,14 @@ export async function changeGoalWorkNode(id: string, action: 'accept' | 'complet
     return next;
   });
 }
+
+export async function editGoalWorkNode(id: string, title: string, successCriteria: string, rationale: string | null = null) {
+  return transaction(async () => {
+    const node = await getGoalWorkNode(id);
+    if (!node) return null;
+    await run('UPDATE goal_work_node SET title = ?, success_criteria = ?, updated_at = datetime(\'now\') WHERE id = ?', title, successCriteria, id);
+    const next = { ...node, title, success_criteria: successCriteria };
+    await insertDecisionEvent({ goalId: node.goal_id, branchId: node.branch_id, entityType: 'goal_work_node', entityId: id, eventType: 'node_edited', before: node, after: next, rationale });
+    return next;
+  });
+}

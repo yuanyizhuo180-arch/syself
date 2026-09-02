@@ -26,4 +26,16 @@ describe('目标工作树节点 API', () => {
       expect.objectContaining({ event_type: 'node_accepted' }),
     );
   });
+
+  it('编辑目标文字时保留旧快照并记录编辑事件', async () => {
+    const db = getTestDb();
+    const goalId = generateId(); const branchId = generateId(); const nodeId = generateId();
+    db.prepare("INSERT INTO goal (id, raw_input, status) VALUES (?, ?, 'active')").run(goalId, '学习 NLP');
+    db.prepare("INSERT INTO planning_branch (id, goal_id, status) VALUES (?, ?, 'active')").run(branchId, goalId);
+    db.prepare("INSERT INTO goal_work_node (id, goal_id, parent_id, branch_id, node_type, title, success_criteria, start_date, end_date, status, source) VALUES (?, ?, NULL, ?, 'month', '旧标题', '旧标准', '2026-09-01', '2026-09-30', 'active', 'manual')").run(nodeId, goalId, branchId);
+    const response = await PATCH(new Request(`http://localhost/api/goal-work-nodes/${nodeId}`, { method: 'PATCH', body: JSON.stringify({ action: 'edit', title: '建立 NLP 实战基础', successCriteria: '完成文本分类项目' }) }), { params: Promise.resolve({ id: nodeId }) });
+    expect(response.status).toBe(200);
+    expect(db.prepare('SELECT title FROM goal_work_node WHERE id = ?').get(nodeId)).toEqual({ title: '建立 NLP 实战基础' });
+    expect(db.prepare("SELECT event_type, before_json FROM decision_event WHERE entity_id = ? AND event_type = 'node_edited'").get(nodeId)).toEqual(expect.objectContaining({ event_type: 'node_edited', before_json: expect.stringContaining('旧标题') }));
+  });
 });

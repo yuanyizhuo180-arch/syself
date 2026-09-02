@@ -10,5 +10,6 @@ describe('目标工作树', () => {
     expect(html).toContain('现金流判断');
     expect(html).toContain('AI 建议');
     expect(html).toContain('采纳');
+    expect(html).toContain('编辑文字');
   });
 });
