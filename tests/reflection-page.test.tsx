@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { ReflectionPanel } from '@/app/reflection/reflection-panel';
+import { ReflectionClient } from '@/app/reflection/reflection-client';
 import type { AIInsight } from '@/lib/schemas/reflection';
 
 const insight: AIInsight = {
@@ -13,6 +14,11 @@ const insight: AIInsight = {
 };
 
 describe('每日复盘页', () => {
+  it('使用为明天调整的短标题', () => {
+    const html = renderToStaticMarkup(<ReflectionClient />);
+    expect(html).toContain('为明天留出余地');
+  });
+
   it('提供三题复盘、emoji 评分与 AI 洞察展示', () => {
     const html = renderToStaticMarkup(<ReflectionPanel loading={false} onSubmit={() => {}} insight={insight} />);
     expect(html).toContain('今天完成情况怎么样？');
