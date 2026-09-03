@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import { GoalWorkTree } from '@/app/workspace/goal-work-tree';
+import { GoalNodeEditor } from '@/app/goal-tree/goal-node-editor';
 
 describe('目标工作树', () => {
   it('按月和周展示目标，并为建议节点提供采纳入口', () => {
@@ -16,5 +17,14 @@ describe('目标工作树', () => {
     expect(html).toContain('新建周目标');
     expect(html).toContain('生成 AI 建议');
     expect(html).toContain('暂停');
+  });
+
+  it('提供页面内的目标编辑表单', () => {
+    const html = renderToStaticMarkup(<GoalNodeEditor editor={{ mode: 'create', nodeType: 'month', parentId: null, title: '', successCriteria: '', startDate: '2026-09-03', endDate: '2026-10-03' }} onSave={() => {}} onCancel={() => {}} />);
+    expect(html).toContain('新建月目标');
+    expect(html).toContain('目标名称');
+    expect(html).toContain('完成标准');
+    expect(html).toContain('开始日期');
+    expect(html).toContain('保存目标');
   });
 });
