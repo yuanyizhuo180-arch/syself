@@ -8,14 +8,26 @@ export type GoalWorkNodeRecord = {
   source: 'ai_suggestion' | 'manual' | 'replan'; route_phase_ref: string | null; supersedes_id: string | null;
 };
 
+export type GoalWorkTreeTaskRecord = {
+  id: string; work_node_id: string | null; title: string; completion_criteria: string | null;
+  minimum_action: string | null; estimated_minutes: number | null; day_date: string | null;
+  status: 'planned' | 'done' | 'skipped' | 'partial';
+};
+
 export async function getActiveBranch(goalId: string) {
   return get<{ id: string; goal_id: string }>("SELECT id, goal_id FROM planning_branch WHERE goal_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1", goalId);
 }
 
 export async function getGoalWorkTree(goalId: string) {
   const branch = await getActiveBranch(goalId);
-  if (!branch) return { branch: null, nodes: [] as GoalWorkNodeRecord[] };
-  return { branch, nodes: await all<GoalWorkNodeRecord>('SELECT * FROM goal_work_node WHERE goal_id = ? AND branch_id = ? ORDER BY start_date, created_at', goalId, branch.id) };
+  if (!branch) return { branch: null, nodes: [] as GoalWorkNodeRecord[], tasks: [] as GoalWorkTreeTaskRecord[] };
+  const nodes = await all<GoalWorkNodeRecord>('SELECT * FROM goal_work_node WHERE goal_id = ? AND branch_id = ? ORDER BY start_date, created_at', goalId, branch.id);
+  const tasks = await all<GoalWorkTreeTaskRecord>(
+    `SELECT task.id, task.work_node_id, task.title, task.completion_criteria, task.minimum_action, task.estimated_minutes, task.day_date, task.status
+     FROM task INNER JOIN goal_work_node ON goal_work_node.id = task.work_node_id
+     WHERE task.goal_id = ? AND goal_work_node.branch_id = ? ORDER BY task.day_date, task.created_at`, goalId, branch.id,
+  );
+  return { branch, nodes, tasks };
 }
 
 export async function createGoalWorkNode(input: GoalWorkNodeInput & { status?: GoalWorkNodeRecord['status']; routePhaseRef?: string | null }) {
