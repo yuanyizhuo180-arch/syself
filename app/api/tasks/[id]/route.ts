@@ -23,7 +23,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const { id } = await context.params;
     const body = await request.json() as unknown;
     const isPause = !!body && typeof body === 'object' && (body as { action?: string }).action === 'pause';
-    if (!isTaskEdit(body) && !isPause) return Response.json({ code: 'INVALID_INPUT', userMessage: '请填写完整且有效的任务信息。', retryable: false }, { status: 400 });
+    const edit = isTaskEdit(body) ? body : null;
+    if (!edit && !isPause) return Response.json({ code: 'INVALID_INPUT', userMessage: '请填写完整且有效的任务信息。', retryable: false }, { status: 400 });
 
     const task = await get<TaskRecord>('SELECT id, goal_id, work_node_id, title, completion_criteria, minimum_action, estimated_minutes, status FROM task WHERE id = ?', id);
     if (!task) return Response.json({ code: 'NOT_FOUND', userMessage: '任务不存在。', retryable: false }, { status: 404 });
@@ -37,7 +38,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         await insertDecisionEvent({ goalId: task.goal_id, branchId: branch.id, entityType: 'task', entityId: id, eventType: 'task_paused', before: task, after, rationale: null });
         return after;
       }
-      const after = { ...task, title: body.title.trim(), completion_criteria: body.completionCriteria.trim(), minimum_action: body.minimumAction.trim(), estimated_minutes: body.estimatedMinutes };
+      const after = { ...task, title: edit!.title.trim(), completion_criteria: edit!.completionCriteria.trim(), minimum_action: edit!.minimumAction.trim(), estimated_minutes: edit!.estimatedMinutes };
       await run("UPDATE task SET title = ?, completion_criteria = ?, minimum_action = ?, estimated_minutes = ?, updated_at = datetime('now') WHERE id = ?", after.title, after.completion_criteria, after.minimum_action, after.estimated_minutes, id);
       await insertDecisionEvent({ goalId: task.goal_id, branchId: branch.id, entityType: 'task', entityId: id, eventType: 'task_edited', before: task, after, rationale: null });
       return after;
