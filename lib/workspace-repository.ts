@@ -11,7 +11,7 @@ export type GoalWorkNodeRecord = {
 export type GoalWorkTreeTaskRecord = {
   id: string; work_node_id: string | null; title: string; completion_criteria: string | null;
   minimum_action: string | null; estimated_minutes: number | null; day_date: string | null;
-  status: 'planned' | 'done' | 'skipped' | 'partial';
+  status: 'planned' | 'done' | 'skipped' | 'partial' | 'paused';
 };
 
 export async function getActiveBranch(goalId: string) {

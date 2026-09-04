@@ -54,7 +54,7 @@ export const ROUTE_STRATEGY_LABELS: Record<RouteStrategy, string> = {
 // 任务相关
 // ============================================================
 
-export type TaskStatus = 'planned' | 'done' | 'skipped' | 'partial';
+export type TaskStatus = 'planned' | 'done' | 'skipped' | 'partial' | 'paused';
 
 export type Quadrant =
   | 'important_urgent'

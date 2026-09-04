@@ -100,7 +100,7 @@ export interface Task {
   timeBlock: 'morning' | 'afternoon' | 'evening' | null;
   dayDate: string; // YYYY-MM-DD
   energyLevel: 'high' | 'medium' | 'low';
-  status: 'planned' | 'done' | 'skipped' | 'partial';
+  status: 'planned' | 'done' | 'skipped' | 'partial' | 'paused';
   skipReason: string | null;
   partialNote: string | null;
   userModifiedFields: string[]; // 用户修改了 AI 建议的哪些字段
