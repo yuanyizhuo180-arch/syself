@@ -39,7 +39,6 @@ export type {
 export {
   TaskDraftSchema,
   WeeklyPlanSchema,
-  checkCapacity,
   validateTaskQuality,
   resolveDuration,
 } from './task';
@@ -47,7 +46,6 @@ export type {
   TaskDraft,
   WeeklyPlan,
   Task,
-  CapacityCheckResult,
   DurationEstimate,
 } from './task';
 

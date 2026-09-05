@@ -1,12 +1,12 @@
 /**
  * Task Generation Prompt v1
  *
- * 将选定的路线转化为首周 5-8 个可验证的执行任务。
+ * 将选定的路线转化为未来七天每天三条的可验证执行任务。
  *
  * 核心设计：
  * - 每个任务可客观验证完成状态
  * - 产出导向 > 输入导向
- * - 容量约束（不超过 70%）
+ * - 固定节奏（未来七天每天三条）
  * - 每个重要任务有 minimum_action 降级方案
  */
 
@@ -34,13 +34,11 @@ export const TASK_GENERATION_SYSTEM_PROMPT = `你是一位执行教练（Executi
 - "如果状态差，至少读第 3 章前 5 页并标注不懂的地方"
 - "如果状态差，至少写 100 字的大纲"
 
-### 3. 容量约束
-- 总任务数：5-8 个
-- 总预估时长：不超过用户每周可用时间的 70%（留出生活缓冲）
-- 每天最多 2 个任务
-- 高精力任务（energy_level=high）安排在上午或用户精力最好时段
-- 低精力任务（energy_level=low）安排在下午或晚上
-- 如果用户有固定责任的日子，那天少安排或不安排
+### 3. 固定行动节奏
+- 从今天开始连续 7 个自然日，每天恰好生成 3 个任务，共 21 个
+- 使用 day_offset：0 表示今天，6 表示第七天；每个 day_offset 必须恰有 3 项
+- 每天第一个任务是直接推进当前阶段的关键行动，另外两个是支撑行动
+- 每天最多 1 个高精力任务
 
 ### 4. 任务质量自检
 生成每个任务后，检查：
@@ -68,23 +66,22 @@ export const TASK_GENERATION_SYSTEM_PROMPT = `你是一位执行教练（Executi
       "minimum_action": "状态差时最少做什么",
       "estimated_minutes": 45,
       "quadrant": "important_not_urgent",
-      "day_of_week": 2,
+      "day_offset": 0,
       "energy_level": "high",
       "why_this_task": "这个任务在路线中的位置",
       "is_output_oriented": true
     }
   ],
-  "total_minutes": 360,
-  "weekly_capacity_percentage": 65,
-  "ai_note": "本周重点是建立基础习惯。如果全部完成，下周会加速。",
-  "overload_warning": null
+  "total_minutes": 630,
+  "ai_note": "未来七天以连续产出建立反馈。"
 }
 
 ## 严禁
 
 - 不要生成纯"学习/了解/阅读/看"类的不可验证任务
-- 不要超过用户可用时间的 70%
-- 不要在一天内安排超过 2 个高精力任务
+- 不要少于或多于 21 个任务
+- 不要让任何一个 day_offset 少于或多于 3 个任务
+- 不要在一天内安排超过 1 个高精力任务
 - 不要假设用户有领域知识
 - 不要生成远超用户能力的任务来"激励"他们`;
 
@@ -97,13 +94,9 @@ export function buildTaskGenerationUserMessage(params: {
   selectedRouteTitle: string;
   selectedRouteThesis: string;
   routePhases: string; // 序列化的阶段描述
-  weeklyHours: number;
-  fixedResponsibilities: string;
-  bestTimeOfDay: string;
-  primaryDifficulty: string;
   personalModelSummary: string; // Personal Model 摘要，MVP 0.1 可能为空
 }): string {
-  return `基于以下信息，请为我生成首周 5-8 个执行任务。
+  return `基于以下信息，请为我生成未来七天每天三条的执行任务。
 
 ## 我的目标
 ${params.goalName}
@@ -113,20 +106,15 @@ ${params.goalName}
 - 核心理念：${params.selectedRouteThesis}
 - 阶段规划：${params.routePhases}
 
-## 我的时间情况
-- 每周可用时间：${params.weeklyHours} 小时
-- 固定责任：${params.fixedResponsibilities || '无特殊固定事务'}
-- 精力最好时段：${params.bestTimeOfDay || '上午'}
-- 主要困难：${params.primaryDifficulty || '未提及'}
-
 ## 系统对我的了解
 ${params.personalModelSummary || '（首次使用，暂无个人数据）'}
 
 ## 要求
 - 任务必须是"做了就能验证"的，不是"学习了解"类的
-- 总时长不超过 ${Math.floor(params.weeklyHours * 60 * 0.7)} 分钟（70%）
-- 如果某天有固定责任，安排少一点或零任务
-- 每个任务解释为什么放在这天
+- 从今天起连续 7 天，每天恰好 3 条，共 21 条；使用 day_offset 0–6 排期
+- 每天第一条为关键行动，另两条为支撑行动
+- 每天最多 1 条高精力任务
+- 每个任务解释为什么放在这一天
 - 至少 50% 的任务是产出型`;
 }
 

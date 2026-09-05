@@ -1,10 +1,10 @@
 import { generateId, get, run, all, transaction } from '@/lib/db';
 import { TaskDraftSchema, type TaskDraft } from '@/lib/schemas/task';
+import { ensureGoalWorkPath, getActiveBranch } from '@/lib/workspace-repository';
 
-function dateForWeekday(dayOfWeek: number): string {
+function dateForOffset(dayOffset: number): string {
   const date = new Date();
-  const offset = (date.getDay() + 6) % 7;
-  date.setDate(date.getDate() - offset + dayOfWeek - 1);
+  date.setDate(date.getDate() + dayOffset);
   return date.toISOString().slice(0, 10);
 }
 
@@ -20,13 +20,19 @@ export async function POST(request: Request): Promise<Response> {
     const body = await request.json() as { goalId?: string; routeId?: string; tasks?: unknown[] };
     if (!body.goalId || !body.routeId || !Array.isArray(body.tasks)) return Response.json({ code: 'INVALID_INPUT', userMessage: '任务确认数据不完整', retryable: false }, { status: 400 });
     const tasks = body.tasks.map((item) => TaskDraftSchema.parse(item)) as TaskDraft[];
-    const route = await get("SELECT id FROM plan_route WHERE id = ? AND goal_id = ? AND status = 'selected'", body.routeId, body.goalId);
+    const [route, branch] = await Promise.all([
+      get<{ id: string; phases_json: string; first_month_preview_json: string }>("SELECT id, phases_json, first_month_preview_json FROM plan_route WHERE id = ? AND goal_id = ? AND status = 'selected'", body.routeId, body.goalId),
+      getActiveBranch(body.goalId),
+    ]);
     if (!route) return Response.json({ code: 'INVALID_ROUTE', userMessage: '请选择有效路线后再确认任务', retryable: false }, { status: 422 });
+    if (!branch) return Response.json({ code: 'MISSING_BRANCH', userMessage: '请先建立活动规划分支', retryable: false }, { status: 422 });
+    const startDate = dateForOffset(0);
     await transaction(async () => {
+      const path = await ensureGoalWorkPath({ goalId: body.goalId!, branchId: branch.id, startDate, route: { phases: JSON.parse(route.phases_json), firstMonthPreview: JSON.parse(route.first_month_preview_json) } });
       for (const task of tasks) {
         await run(
-          `INSERT INTO task (id, goal_id, route_id, title, completion_criteria, minimum_action, estimated_minutes, quadrant, time_block, day_date, energy_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planned')`,
-          generateId(), body.goalId, body.routeId, task.title, task.completion_criteria, task.minimum_action, task.estimated_minutes, task.quadrant, task.time_block ?? null, dateForWeekday(task.day_of_week), task.energy_level,
+          `INSERT INTO task (id, goal_id, route_id, work_node_id, title, completion_criteria, minimum_action, estimated_minutes, quadrant, time_block, day_date, energy_level, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planned')`,
+          generateId(), body.goalId, body.routeId, path.currentWeek.id, task.title, task.completion_criteria, task.minimum_action, task.estimated_minutes, task.quadrant, task.time_block ?? null, dateForOffset(task.day_offset), task.energy_level,
         );
       }
     });

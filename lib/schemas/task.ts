@@ -35,11 +35,12 @@ export const TaskDraftSchema = z.object({
     'not_important_not_urgent',
   ]),
 
-  day_of_week: z
+  day_offset: z
     .number()
-    .min(1)
-    .max(7)
-    .describe('建议安排在一周的第几天（1=周一, 7=周日）'),
+    .int()
+    .min(0)
+    .max(6)
+    .describe('从生成日开始第几天（0=今天，6=第七天）'),
 
   energy_level: z
     .enum(['high', 'medium', 'low'])
@@ -60,24 +61,13 @@ export const TaskDraftSchema = z.object({
 });
 
 export const WeeklyPlanSchema = z.object({
-  tasks: z.array(TaskDraftSchema).min(5).max(8).describe('5-8 个首周任务'),
+  tasks: z.array(TaskDraftSchema).length(21).describe('未来七天每天三条，共 21 条行动'),
 
   total_minutes: z.number().describe('所有任务的总预估时长'),
 
-  weekly_capacity_percentage: z
-    .number()
-    .min(0)
-    .max(100)
-    .describe('占用户每周可用时间的百分比'),
-
   ai_note: z
     .string()
-    .describe('AI 对本周计划的一句话说明，如"本周重点是建立基础习惯，任务偏轻量"'),
-
-  overload_warning: z
-    .string()
-    .nullable()
-    .describe('如果超过 70% 容量，给出警告说明。否则为 null'),
+    .describe('AI 对未来七天计划的一句话说明'),
 });
 
 export type TaskDraft = z.infer<typeof TaskDraftSchema>;
@@ -106,51 +96,6 @@ export interface Task {
   userModifiedFields: string[]; // 用户修改了 AI 建议的哪些字段
   createdAt: string;
   updatedAt: string;
-}
-
-// ============================================================
-// 容量校验
-// ============================================================
-
-export interface CapacityCheckResult {
-  valid: boolean;
-  totalMinutes: number;
-  weeklyCapacity: number; // 用户每周可用时间
-  limit: number; // 70% 上限
-  percentage: number;
-  isOverloaded: boolean;
-  warning: string | null;
-}
-
-export function checkCapacity(
-  tasks: TaskDraft[],
-  userWeeklyMinutes: number,
-): CapacityCheckResult {
-  const totalMinutes = tasks.reduce((s, t) => s + t.estimated_minutes, 0);
-  const limit = Math.floor(userWeeklyMinutes * 0.7);
-  const percentage = userWeeklyMinutes > 0
-    ? Math.round((totalMinutes / userWeeklyMinutes) * 100)
-    : 100;
-
-  const isOverloaded = totalMinutes > limit;
-
-  let warning: string | null = null;
-  if (isOverloaded) {
-    const overBy = totalMinutes - limit;
-    warning = `任务总时长 ${totalMinutes} 分钟，超过建议上限 ${limit} 分钟（70%），超出 ${overBy} 分钟。建议减少 1-2 个任务或缩短任务时长。`;
-  } else if (percentage > 60) {
-    warning = `任务总时长接近上限（${percentage}%），建议预留充足缓冲。`;
-  }
-
-  return {
-    valid: !isOverloaded,
-    totalMinutes,
-    weeklyCapacity: userWeeklyMinutes,
-    limit,
-    percentage,
-    isOverloaded,
-    warning,
-  };
 }
 
 // ============================================================
@@ -183,29 +128,24 @@ export function validateTaskQuality(tasks: TaskDraft[]): {
     );
   }
 
-  // 检查每天任务数
-  const byDay = new Map<number, number>();
-  tasks.forEach((t) => {
-    byDay.set(t.day_of_week, (byDay.get(t.day_of_week) || 0) + 1);
-  });
-  byDay.forEach((count, day) => {
-    if (count > 2) {
-      issues.push(`第 ${day} 天安排了 ${count} 个任务，超过每日上限 2 个`);
-    }
-  });
+  // 每一天必须恰有三条行动
+  for (let day = 0; day < 7; day += 1) {
+    const count = tasks.filter((task) => task.day_offset === day).length;
+    if (count !== 3) issues.push(`第 ${day + 1} 天必须安排 3 个任务，当前为 ${count} 个`);
+  }
 
   // 检查高精力任务是否集中
   const highEnergyDays = new Set(
     tasks
       .filter((t) => t.energy_level === 'high')
-      .map((t) => t.day_of_week),
+      .map((t) => t.day_offset),
   );
   highEnergyDays.forEach((day) => {
     const highOnDay = tasks.filter(
-      (t) => t.day_of_week === day && t.energy_level === 'high',
+      (t) => t.day_offset === day && t.energy_level === 'high',
     );
     if (highOnDay.length > 1) {
-      issues.push(`第 ${day} 天有 ${highOnDay.length} 个高精力任务，建议每天最多 1 个`);
+      issues.push(`第 ${day + 1} 天有 ${highOnDay.length} 个高精力任务，建议每天最多 1 个`);
     }
   });
 

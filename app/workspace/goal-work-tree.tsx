@@ -10,6 +10,17 @@ export type NewGoalWorkNode = { nodeType: 'month' | 'week'; parentId: string | n
 export type TaskEditValues = { id: string; title: string; completionCriteria: string; minimumAction: string; estimatedMinutes: number };
 
 const isFuture = (node: TreeNode, today: string) => node.start_date > today;
+const byStartDate = (a: TreeNode, b: TreeNode) => a.start_date.localeCompare(b.start_date);
+const coversToday = (node: TreeNode, today: string) => node.start_date <= today && node.end_date >= today;
+const selectCurrentNode = (nodes: TreeNode[], today: string) => {
+  const sorted = [...nodes].sort(byStartDate);
+  return sorted.find((node) => coversToday(node, today))
+    ?? [...sorted].reverse().find((node) => node.start_date <= today)
+    ?? sorted[0];
+};
+const selectFutureNode = (nodes: TreeNode[], currentId: string | undefined, today: string) => [...nodes]
+  .filter((node) => node.id !== currentId && isFuture(node, today))
+  .sort(byStartDate)[0];
 const plannedToday = (tasks: TreeTask[], weekId: string, today: string) => tasks.filter((task) => task.work_node_id === weekId && task.day_date === today && task.status === 'planned');
 const pausedToday = (tasks: TreeTask[], weekId: string, today: string) => tasks.filter((task) => task.work_node_id === weekId && task.day_date === today && task.status === 'paused');
 
@@ -44,11 +55,11 @@ export function GoalWorkTree({ goalName, nodes, tasks = [], today = new Date().t
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const months = nodes.filter((node) => node.node_type === 'month');
-  const currentMonth = months.find((node) => !isFuture(node, today)) ?? months[0];
-  const futureMonth = months.find((node) => node.id !== currentMonth?.id && isFuture(node, today));
+  const currentMonth = selectCurrentNode(months, today);
+  const futureMonth = selectFutureNode(months, currentMonth?.id, today);
   const weeks = currentMonth ? nodes.filter((node) => node.node_type === 'week' && node.parent_id === currentMonth.id) : [];
-  const currentWeek = weeks.find((node) => !isFuture(node, today)) ?? weeks[0];
-  const futureWeek = weeks.find((node) => node.id !== currentWeek?.id && isFuture(node, today));
+  const currentWeek = selectCurrentNode(weeks, today);
+  const futureWeek = selectFutureNode(weeks, currentWeek?.id, today);
   const toggle = (key: string) => setExpanded((current) => current === key ? null : key);
   const todayTasks = currentWeek ? plannedToday(tasks, currentWeek.id, today) : [];
   const pausedTasks = currentWeek ? pausedToday(tasks, currentWeek.id, today) : [];

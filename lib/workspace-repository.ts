@@ -44,6 +44,67 @@ export async function createGoalWorkNode(input: GoalWorkNodeInput & { status?: G
 
 export async function getGoalWorkNode(id: string) { return get<GoalWorkNodeRecord>('SELECT * FROM goal_work_node WHERE id = ?', id); }
 
+type RoutePathSource = {
+  phases: Array<{ name?: unknown; focus?: unknown }>;
+  firstMonthPreview: { week1_summary?: unknown; week2_summary?: unknown };
+};
+
+const addDays = (date: string, days: number) => {
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+};
+
+const textOr = (value: unknown, fallback: string) => typeof value === 'string' && value.trim() ? value.trim() : fallback;
+
+async function createPathNode(input: Omit<GoalWorkNodeInput, 'source'> & { status: GoalWorkNodeRecord['status']; routePhaseRef: string }) {
+  const id = generateId();
+  await run(
+    'INSERT INTO goal_work_node (id, goal_id, parent_id, branch_id, node_type, title, success_criteria, start_date, end_date, status, source, route_phase_ref) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    id, input.goalId, input.parentId, input.branchId, input.nodeType, input.title, input.successCriteria, input.startDate, input.endDate, input.status, 'ai_suggestion', input.routePhaseRef,
+  );
+  const node = await getGoalWorkNode(id);
+  if (!node) throw new Error('创建目标路径节点失败');
+  await insertDecisionEvent({ goalId: input.goalId, branchId: input.branchId, entityType: 'goal_work_node', entityId: id, eventType: input.status === 'suggested' ? 'node_suggested' : 'node_created', before: null, after: node, rationale: null });
+  return node;
+}
+
+async function currentNode(goalId: string, branchId: string, nodeType: 'month' | 'week', startDate: string, parentId: string | null) {
+  const parentClause = parentId === null ? 'parent_id IS NULL' : 'parent_id = ?';
+  const params = parentId === null
+    ? [goalId, branchId, nodeType, startDate, startDate]
+    : [goalId, branchId, nodeType, parentId, startDate, startDate];
+  return get<GoalWorkNodeRecord>(`SELECT * FROM goal_work_node WHERE goal_id = ? AND branch_id = ? AND node_type = ? AND ${parentClause} AND start_date <= ? AND end_date >= ? AND status IN ('active', 'suggested') ORDER BY start_date DESC LIMIT 1`, ...params);
+}
+
+async function futureNode(goalId: string, branchId: string, nodeType: 'month' | 'week', startDate: string, parentId: string | null) {
+  const parentClause = parentId === null ? 'parent_id IS NULL' : 'parent_id = ?';
+  const params = parentId === null
+    ? [goalId, branchId, nodeType, startDate]
+    : [goalId, branchId, nodeType, parentId, startDate];
+  return get<GoalWorkNodeRecord>(`SELECT * FROM goal_work_node WHERE goal_id = ? AND branch_id = ? AND node_type = ? AND ${parentClause} AND start_date > ? AND status IN ('active', 'suggested') ORDER BY start_date ASC LIMIT 1`, ...params);
+}
+
+export async function ensureGoalWorkPath(input: { goalId: string; branchId: string; route: RoutePathSource; startDate: string }) {
+  const firstPhase = input.route.phases[0] ?? {};
+  const secondPhase = input.route.phases[1] ?? {};
+  const firstName = textOr(firstPhase.name, '建立实践基础');
+  const firstFocus = textOr(firstPhase.focus, '完成第一阶段的最小可验证产出');
+  const secondName = textOr(secondPhase.name, `巩固${firstName}`);
+  const secondFocus = textOr(secondPhase.focus, `在${firstName}基础上形成下一阶段成果`);
+  const currentMonth = await currentNode(input.goalId, input.branchId, 'month', input.startDate, null)
+    ?? await createPathNode({ goalId: input.goalId, branchId: input.branchId, parentId: null, nodeType: 'month', title: `第一个月：${firstName}`, successCriteria: firstFocus, startDate: input.startDate, endDate: addDays(input.startDate, 29), status: 'active', routePhaseRef: firstName });
+  const currentWeek = await currentNode(input.goalId, input.branchId, 'week', input.startDate, currentMonth.id)
+    ?? await createPathNode({ goalId: input.goalId, branchId: input.branchId, parentId: currentMonth.id, nodeType: 'week', title: `第 1 周：${textOr(input.route.firstMonthPreview.week1_summary, firstName)}`, successCriteria: firstFocus, startDate: input.startDate, endDate: addDays(input.startDate, 6), status: 'active', routePhaseRef: firstName });
+  const nextWeekStart = addDays(input.startDate, 7);
+  const futureWeek = await futureNode(input.goalId, input.branchId, 'week', input.startDate, currentMonth.id)
+    ?? await createPathNode({ goalId: input.goalId, branchId: input.branchId, parentId: currentMonth.id, nodeType: 'week', title: `第 2 周：${textOr(input.route.firstMonthPreview.week2_summary, `继续推进${firstName}`)}`, successCriteria: `完成${textOr(input.route.firstMonthPreview.week2_summary, firstFocus)}的最小可验证产出`, startDate: nextWeekStart, endDate: addDays(nextWeekStart, 6), status: 'suggested', routePhaseRef: firstName });
+  const nextMonthStart = addDays(input.startDate, 30);
+  const futureMonth = await futureNode(input.goalId, input.branchId, 'month', input.startDate, null)
+    ?? await createPathNode({ goalId: input.goalId, branchId: input.branchId, parentId: null, nodeType: 'month', title: `第二个月：${secondName}`, successCriteria: secondFocus, startDate: nextMonthStart, endDate: addDays(nextMonthStart, 29), status: 'suggested', routePhaseRef: secondName });
+  return { currentMonth, currentWeek, futureWeek, futureMonth };
+}
+
 export async function insertDecisionEvent(input: { goalId: string; branchId: string; entityType: string; entityId: string; eventType: string; before: unknown; after: unknown; rationale: string | null }) {
   await run(
     'INSERT INTO decision_event (id, goal_id, branch_id, event_type, entity_type, entity_id, before_json, after_json, rationale) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',

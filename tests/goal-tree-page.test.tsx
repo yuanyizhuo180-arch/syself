@@ -33,6 +33,21 @@ describe('目标工作树', () => {
     expect(html).toContain('已暂停 · 1 项');
   });
 
+  it('跳过已结束节点并选择覆盖今天的当前月周', () => {
+    const html = renderToStaticMarkup(<GoalWorkTree goalName="学习 NLP" today="2026-09-04" nodes={[
+      { id: 'm-old', parent_id: null, node_type: 'month', title: '已结束的旧月', success_criteria: '旧标准', start_date: '2026-08-01', end_date: '2026-08-31', status: 'completed', source: 'manual' },
+      { id: 'w-old', parent_id: 'm-old', node_type: 'week', title: '已结束的旧周', success_criteria: '旧标准', start_date: '2026-08-01', end_date: '2026-08-07', status: 'completed', source: 'manual' },
+      { id: 'm-now', parent_id: null, node_type: 'month', title: '当前月目标', success_criteria: '当前标准', start_date: '2026-09-01', end_date: '2026-09-30', status: 'active', source: 'manual' },
+      { id: 'w-now', parent_id: 'm-now', node_type: 'week', title: '当前周目标', success_criteria: '当前标准', start_date: '2026-09-01', end_date: '2026-09-07', status: 'active', source: 'manual' },
+      { id: 'w-next', parent_id: 'm-now', node_type: 'week', title: '下一周目标', success_criteria: '未来标准', start_date: '2026-09-08', end_date: '2026-09-14', status: 'suggested', source: 'ai_suggestion' },
+      { id: 'm-next', parent_id: null, node_type: 'month', title: '下一个月目标', success_criteria: '未来标准', start_date: '2026-10-01', end_date: '2026-10-31', status: 'suggested', source: 'ai_suggestion' },
+    ]} tasks={[]} />);
+    expect(html).toContain('当前月目标');
+    expect(html).toContain('当前周目标');
+    expect(html).toContain('下一章节 · 未展开');
+    expect(html).toContain('后续任务 · 未展开');
+  });
+
   it('提供页面内的目标编辑表单', () => {
     const html = renderToStaticMarkup(<GoalNodeEditor editor={{ mode: 'create', nodeType: 'month', parentId: null, title: '', successCriteria: '', startDate: '2026-09-03', endDate: '2026-10-03' }} onSave={() => {}} onCancel={() => {}} />);
     expect(html).toContain('新建月目标');
@@ -48,5 +63,17 @@ describe('目标工作树', () => {
     expect(source).toContain("action: 'pause'");
     expect(source).toContain('onEditTask={editTask}');
     expect(source).toContain('onPauseTask={pauseTask}');
+  });
+
+  it('合并 AI 返回的真实节点而不在页面状态中重复追加', () => {
+    const source = readFileSync(join(process.cwd(), 'app/goal-tree/goal-tree-client.tsx'), 'utf8');
+    expect(source).toContain('mergeNodes(current, body.nodes)');
+    expect(source).not.toContain('setNodes((current) => [...current, ...body.nodes])');
+  });
+
+  it('在展开下一章节时为下一周和今日行动留出空间', () => {
+    const css = readFileSync(join(process.cwd(), 'app/workspace/goal-work-tree.module.css'), 'utf8');
+    expect(css).toContain('.branch:has(.futureCard[open]) { min-height:430px; }');
+    expect(css).toContain('.branch:has(.futureMonth[open]) .futureWeek { top:242px; }');
   });
 });
